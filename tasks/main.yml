@@ -1,0 +1,68 @@
+---
+# ---------------------------------------------------------------------------------------------- #
+# This file is not meant to be modified, it serves as an entrypoint for other files in the role. #
+# Files are named after the platform, see vars/main.yml for the order and example filenames      #
+# For vars, it will loop through every file it can find and include them, the most specific file #
+# will be included last. This allows for more specific variables to override less specific ones  #
+# For assertions, all matching files will be ran in order from least to most specific            #
+# For tasks, only the most specific file will be ran. A post task file always.yml can be         #
+# created to run tasks that must be ran on every host regardless of platform in parallel.        #
+# A variable __role_action can be set to specify which path(s) to search for tasks.              #
+# ---------------------------------------------------------------------------------------------- #
+
+# Ensure distribution facts are gathered
+- name: "Main | Ensure ansible_facts used by role"
+  ansible.builtin.setup:
+    gather_subset: min
+
+# Set all variables matching this platform
+- name: "Main | Set platform/version specific variables"
+  ansible.builtin.include_vars: "{{ __role_found_vars }}"
+  vars:
+    __role_find_vars:
+      files: ["{{ __role_var_search }}"]
+      skip: true
+      paths: ["{{ role_path }}/vars"]
+    __role_found_vars: "{{ lookup('ansible.builtin.first_found', __role_find_vars) }}"
+  when: __role_found_vars | length > 0  # Check if any variables were found
+  loop: "{{ __role_file_search_order | reverse | unique }}"  # reverse order to allow for more specific variables to override less specific ones
+  loop_control:
+    loop_var: __role_var_search
+
+# Assert variables are set correctly for this platform
+- name: "Main | Assert platform/version specific variables"
+  ansible.builtin.include_tasks: "{{ __role_found_asserts }}"
+  vars:
+    __role_find_asserts:
+      files: ["{{ __role_assert_search }}"]
+      skip: true
+      paths: ["{{ role_path }}/tasks/assert"]
+    __role_found_asserts: "{{ lookup('ansible.builtin.first_found', __role_find_asserts) }}"
+  when: __role_found_asserts | length > 0  # Check if any assertions were found
+  loop: "{{ __role_file_search_order | unique }}"
+  loop_control:
+    loop_var: __role_assert_search
+
+# Run task file most specific to this platform
+- name: "Main | Run platform/version specific tasks"
+  ansible.builtin.include_tasks: "{{ __role_found_tasks }}"
+  vars:
+    __role_find_tasks:
+      files: "{{ __role_file_search_order }}"
+      skip: true
+      paths: ["{{ role_path }}/tasks/{{ __role_action | default('setup') }}"]
+    __role_found_tasks: "{{ lookup('ansible.builtin.first_found', __role_find_tasks) }}"
+  when: __role_found_tasks | length > 0  # Check if any tasks were found
+
+# Run tasks in parallel with all hosts
+- name: "Main | tasks that always run"
+  ansible.builtin.include_tasks: "{{ __role_found_tasks }}"
+  vars:
+    __role_find_tasks:
+      files: ["always.yml"]
+      skip: true
+      paths: ["{{ role_path }}/tasks/{{ __role_action | default('setup') }}"]
+    __role_found_tasks: "{{ lookup('ansible.builtin.first_found', __role_find_tasks) }}"
+  when: __role_found_tasks | length > 0  # Check if task was found
+
+...
