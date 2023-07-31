@@ -6,5 +6,6 @@ _rke2_dependencies:
   - k3s-selinux
   - gzip
   - tar
+  - curl
 
 ...
