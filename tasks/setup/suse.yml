@@ -1,0 +1,8 @@
+---
+- name: Install Kubernetes dependencies
+  become: true
+  community.general.zypper:
+    name: "{{ rke2_dependencies }}"
+    state: present
+
+...

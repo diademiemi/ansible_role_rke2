@@ -10,7 +10,7 @@
 #       ansible.builtin.include_role:
 #         name: upstream.collection.role
 #       vars:
-#         upstream_role_var: "{{ upstream_role_var | default(template_role_var) }}"
+#         upstream_role_var: "{{ upstream_role_var | default(rke2_role_var) }}"
 #                                                   ^ Pass our vars to upstream
 #
 #  rescue:

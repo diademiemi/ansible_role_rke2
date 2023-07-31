@@ -1,3 +1,12 @@
 ---
+rancher_rke2_role_name: "rke2"
+rancher_rke2_script_url: "https://get.rke2.io"
+rancher_rke2_channel: "v1.24" # Latest is 1.26, this is latest supported by Rancher
+rancher_rke2_tls_san:
+  - "{{ ansible_domain }}"
 
+rancher_rke2_type: "server"
+rancher_rke2_server_ansible_user: "{{ ansible_user_id }}"
+
+rke2_dependencies: "{{ _rke2_dependencies }}"
 ...

@@ -1,0 +1,13 @@
+---
+- name: Install Kubernetes dependencies
+  become: true
+  community.general.zypper:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ rke2_dependencies }}"
+  notify: Reboot host
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+...

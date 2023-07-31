@@ -2,8 +2,8 @@ galaxy_info:
   author: diademiemi
   namespace: diademiemi
   company: diademiemi
-  description: Ansible role to install and configure template
-  role_name: template
+  description: Ansible role to install and configure rke2
+  role_name: rke2
 
   # If the issue tracker for your role is not on github, uncomment the
   # next line and provide a value

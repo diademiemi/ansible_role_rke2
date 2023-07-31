@@ -1,0 +1,8 @@
+---
+- name: Install Kubernetes volume dependencies
+  become: true
+  ansible.builtin.yum:
+    name: "{{ rke2_dependencies }}"
+    state: present
+
+...

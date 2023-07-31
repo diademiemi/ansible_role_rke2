@@ -1,0 +1,9 @@
+---
+_rke2_dependencies:
+  - open-iscsi
+  - nfs-kernel-server
+  - nfs-common
+  - gzip
+  - tar
+
+...

@@ -1,0 +1,10 @@
+---
+_rke2_dependencies:
+  - iscsi-initiator-utils
+  - open-iscsi
+  - nfs-utils
+  - k3s-selinux
+  - gzip
+  - tar
+
+...

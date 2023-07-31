@@ -24,7 +24,7 @@
       failed_when: false
 
   tasks:
-    - name: "Include diademiemi.template"
+    - name: "Include diademiemi.rke2"
       ansible.builtin.include_role:
         name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
 
