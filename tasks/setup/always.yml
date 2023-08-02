@@ -49,7 +49,9 @@
     name: rke2-server
     state: started
     enabled: true
-  when: rancher_rke2_server_ip is undefined
+  when:
+    - rancher_rke2_server_ip is undefined
+    - "'molecule-notest' not in ansible_skip_tags"
 
 - name: "Setup | Wait for RKE2 server to be ready on port 9345"
   become: true
@@ -57,7 +59,9 @@
     port: 9345
     state: started
     timeout: 300
-  when: rancher_rke2_server_ip is undefined
+  when:
+    - rancher_rke2_server_ip is undefined
+    - "'molecule-notest' not in ansible_skip_tags"
 
 - name: "Setup | Start other RKE2 servers"
   become: true
@@ -65,7 +69,9 @@
     name: rke2-server
     state: started
     enabled: true
-  when: rancher_rke2_server_ip is defined
+  when:
+    - rancher_rke2_server_ip is defined
+    - "'molecule-notest' not in ansible_skip_tags"
   retries: 5
   delay: 10
   register: rke2_start
