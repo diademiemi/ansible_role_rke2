@@ -4,6 +4,6 @@ _rke2_dependencies:
   - nfs-utils
   - gzip
   - tar
-  - curl
+  - curl-minimal
 
 ...
