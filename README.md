@@ -28,14 +28,14 @@ Role Variables
 
 Variable | Default | Description
 --- | --- | ---
-`rancher_rke2_role_name` | `rke2` | Name of role role in collection Rancher
-`rancher_rke2_script_url` | `https://get.rke2.io` | URL of the RKE2 setup script
-`rancher_rke2_channel` | `v1.24` | RKE2 release channel. v1.24 is the latest supported for Rancher
-`rancher_rke2_tls_san` | `["{{ ansible_domain }}"]` | List of additional domains to add to the RKE2 server certificate
-`rancher_rke2_type` | `server` | RKE2 type. Options: `[server, agent]`
-`rancher_rke2_server_token` | ` ` | RKE2 server token to set. Will be generated at runtime if unset.
-`rancher_rke2_server_ip` | ` ` | If this variable is set, nodes will register to this existing server. Must not be set on the initial host. To provision with Rancher, use the [rke2_agent](../rke2_agent/) role.
-`rancher_rke2_server_ansible_user` | `{{ ansible_user_id }}` | User to copy the kubeconfig to ~/.kube/config
+`rke2_role_name` | `rke2` | Name of role role in collection Rancher
+`rke2_script_url` | `https://get.rke2.io` | URL of the RKE2 setup script
+`rke2_channel` | `v1.24` | RKE2 release channel. v1.24 is the latest supported for Rancher
+`rke2_tls_san` | `["{{ ansible_domain }}"]` | List of additional domains to add to the RKE2 server certificate
+`rke2_type` | `server` | RKE2 type. Options: `[server, agent]`
+`rke2_server_token` | ` ` | RKE2 server token to set. Will be generated at runtime if unset.
+`rke2_server_ip` | ` ` | If this variable is set, nodes will register to this existing server. Must not be set on the initial host. To provision with Rancher, use the [rke2_agent](../rke2_agent/) role.
+`rke2_server_ansible_user` | `{{ ansible_user_id }}` | User to copy the kubeconfig to ~/.kube/config
 <!--
 `variable` | `default` | Variable example
 `long_variable` | See [defaults/main.yml](./defaults/main.yml) | Variable referring to defaults

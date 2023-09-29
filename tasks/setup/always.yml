@@ -1,10 +1,10 @@
 ---
 - name: "Setup | Generate token if none was given"
   ansible.builtin.set_fact:
-    rancher_rke2_server_token: "{{ lookup('password', '/dev/null length=64 chars=ascii_letters,digits') }}"
+    rke2_server_token: "{{ lookup('password', '/dev/null length=64 chars=ascii_letters,digits') }}"
   delegate_to: localhost
   run_once: true
-  when: rancher_rke2_server_token is not defined
+  when: rke2_server_token is not defined
 
 - name: "Setup | Ensure RKE2 config directory exists"
   become: true
@@ -27,7 +27,7 @@
 - name: "Setup | Download RKE2 install script"
   become: true
   ansible.builtin.get_url:
-    url: "{{ rancher_rke2_script_url }}"
+    url: "{{ rke2_script_url }}"
     dest: "/tmp/rke2-install.sh"
     owner: root
     group: root
@@ -40,8 +40,8 @@
   args:
     creates: "/usr/local/bin/rke2"
   environment:
-    INSTALL_RKE2_CHANNEL: "{{ rancher_rke2_channel }}"
-    INSTALL_RKE2_TYPE: "{{ rancher_rke2_type }}"
+    INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
+    INSTALL_RKE2_TYPE: "{{ rke2_type }}"
 
 - name: "Setup | Start first RKE2 server"
   become: true
@@ -50,7 +50,7 @@
     state: started
     enabled: true
   when:
-    - rancher_rke2_server_ip is undefined
+    - rke2_server_ip is undefined
     - "'molecule-notest' not in ansible_skip_tags"
 
 - name: "Setup | Wait for RKE2 server to be ready on port 9345"
@@ -60,7 +60,7 @@
     state: started
     timeout: 300
   when:
-    - rancher_rke2_server_ip is undefined
+    - rke2_server_ip is undefined
     - "'molecule-notest' not in ansible_skip_tags"
 
 - name: "Setup | Start other RKE2 servers"
@@ -70,7 +70,7 @@
     state: started
     enabled: true
   when:
-    - rancher_rke2_server_ip is defined
+    - rke2_server_ip is defined
     - "'molecule-notest' not in ansible_skip_tags"
   retries: 5
   delay: 10
@@ -80,10 +80,10 @@
 - name: "Server | Ensure .kube directory exists"
   become: true
   ansible.builtin.file:
-    path: ~{{ rancher_rke2_server_ansible_user }}/.kube
+    path: ~{{ rke2_server_ansible_user }}/.kube
     state: directory
-    owner: "{{ rancher_rke2_server_ansible_user }}"
-    group: "{{ rancher_rke2_server_ansible_user }}"
+    owner: "{{ rke2_server_ansible_user }}"
+    group: "{{ rke2_server_ansible_user }}"
     mode: '0700'
 
 - name: Check if rke2.yaml exists
@@ -96,9 +96,9 @@
   become: true
   ansible.builtin.copy:
     src: /etc/rancher/rke2/rke2.yaml
-    dest: ~{{ rancher_rke2_server_ansible_user }}/.kube/config
+    dest: ~{{ rke2_server_ansible_user }}/.kube/config
     remote_src: true
-    owner: "{{ rancher_rke2_server_ansible_user }}"
+    owner: "{{ rke2_server_ansible_user }}"
     mode: "u=rw,g=,o="
   when: rke2_yaml.stat.exists
 

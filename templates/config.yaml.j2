@@ -1,10 +1,10 @@
-token: {{ rancher_rke2_server_token }}
-{% if rancher_rke2_server_ip is defined %}
-server: https://{{ rancher_rke2_server_ip }}:9345
+token: {{ rke2_server_token }}
+{% if rke2_server_ip is defined %}
+server: https://{{ rke2_server_ip }}:9345
 {% endif %}
-{% if rancher_rke2_tls_san | length > 0 %}
+{% if rke2_tls_san | length > 0 %}
 tls-san:
-{% for san in rancher_rke2_tls_san %}
+{% for san in rke2_tls_san %}
   - {{ san }}
 {% endfor %}
 {% endif %}
