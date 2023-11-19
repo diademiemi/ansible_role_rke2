@@ -1,4 +1,4 @@
-Ansible Role Template
+Ansible Role RKE2
 =========
 
 [![Molecule Test](https://github.com/diademiemi/ansible_role_rke2/actions/workflows/molecule.yml/badge.svg)](https://github.com/diademiemi/ansible_role_rke2/actions/workflows/molecule.yml)
@@ -17,7 +17,7 @@ These platforms are supported:
 - EL 8 (Tested on Rocky Linux 8)  
 - EL 9 (Tested on Rocky Linux 9)  
 - Fedora 38  
-- openSUSE Leap 15.4
+- openSUSE Leap 15.5
 
 <!--
 - List hardware requirements here  
