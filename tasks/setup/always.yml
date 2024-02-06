@@ -1,12 +1,5 @@
 ---
-- name: "Setup | Generate token if none was given"
-  ansible.builtin.set_fact:
-    rke2_server_token: "{{ lookup('password', '/dev/null length=64 chars=ascii_letters,digits') }}"
-  delegate_to: localhost
-  run_once: true
-  when: rke2_server_token is not defined
-
-- name: "Setup | Ensure RKE2 config directory exists"
+- name: "Ensure RKE2 config directory exists"
   become: true
   ansible.builtin.file:
     path: "/etc/rancher/rke2"
@@ -15,23 +8,48 @@
     group: root
     mode: '0755'
 
-- name: Setup | Get all hosts in current play
+- name: Set rke2_server_ip to first host if not defined
   ansible.builtin.set_fact:
-    _rke2_current_hosts: "{{ ansible_play_hosts }}"
-
-- name: Setup | Set rke2_server_ip to first host if not defined
-  ansible.builtin.set_fact:
-    rke2_server_ip: "{{ hostvars[_rke2_current_hosts.0].ansible_default_ipv4.address }}"
+    rke2_server_ip: "{{ hostvars[ansible_play_hosts.0].ansible_default_ipv4.address }}"
   when:
-    - _rke2_current_hosts | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
-    - _rke2_current_hosts.0 != inventory_hostname
+    - ansible_play_hosts | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
+    - ansible_play_hosts.0 != inventory_hostname
     - rke2_auto_cluster  # Only run when we should automatically cluster the servers
 
 - name: First server
   when:
     - rke2_server_ip is undefined
   block:
-    - name: "Setup | Template RKE2 config"
+    - name: "Check if config file exists"
+      ansible.builtin.stat:
+        path: "/etc/rancher/rke2/config.yaml"
+      register: _rke2_server_config_exists
+
+    - name: "Read current RKE2 server token from config"
+      ansible.builtin.slurp:
+        src: "/etc/rancher/rke2/config.yaml"
+      register: _rke2_server_config
+      when: _rke2_server_config_exists.stat.exists
+
+
+    - name: "Parse current RKE2 server token from config"
+      ansible.builtin.set_fact:
+        rke2_server_token: "{{ _rke2_server_config_yaml.token }}"
+      vars:
+        _rke2_server_config_yaml: "{{ _rke2_server_config.content | b64decode | from_yaml }}"
+      when: _rke2_server_config_exists.stat.exists and _rke2_server_config_yaml.token is defined
+
+    - name: "Set rke2_server_token to current token if not defined"
+      ansible.builtin.set_fact:
+        rke2_server_token: "{{ rke2_server_token.stdout }}"
+      when: rke2_server_token.stdout is defined and rke2_server_token.stdout != ""
+
+    - name: "Generate token if none was given"
+      ansible.builtin.set_fact:
+        rke2_server_token: "{{ lookup('password', '/dev/null length=64 chars=ascii_letters,digits') }}"
+      when: rke2_server_token is not defined
+
+    - name: "Template RKE2 config"
       become: true
       ansible.builtin.template:
         src: "config.yaml.j2"
@@ -42,7 +60,7 @@
       when:
         - "'molecule-idempotence-notest' not in ansible_skip_tags"
 
-    - name: "Setup | Download RKE2 install script"
+    - name: "Download RKE2 install script"
       become: true
       ansible.builtin.get_url:
         url: "{{ rke2_script_url }}"
@@ -51,7 +69,7 @@
         group: root
         mode: '0755'
 
-    - name: "Setup | Run RKE2 install script"
+    - name: "Run RKE2 install script"
       become: true
       ansible.builtin.command: |
         /tmp/rke2-install.sh
@@ -60,10 +78,10 @@
       environment:
         INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
         INSTALL_RKE2_TYPE: "{{ rke2_type }}"
-      when: 
+      when:
         - "'molecule-idempotence-notest' not in ansible_skip_tags"
 
-    - name: "Setup | Start first RKE2 server"
+    - name: "Start first RKE2 server"
       become: true
       ansible.builtin.service:
         name: rke2-server
@@ -72,7 +90,7 @@
       when:
         - "'molecule-notest' not in ansible_skip_tags"
 
-- name: "Setup | Wait for RKE2 server to be ready on port 9345"
+- name: "Wait for RKE2 server to be ready on port 9345"
   become: true
   ansible.builtin.wait_for:
     port: 9345
@@ -86,7 +104,18 @@
   when:
     - rke2_server_ip is defined
   block:
-    - name: "Setup | Template RKE2 config"
+    - name: "Attempt to get token from master if none was given"
+      ansible.builtin.set_fact:
+        rke2_server_token: "{{ hostvars[_current_master_nodename].rke2_server_token }}"
+      vars:
+        # Get which node has the master IP
+        # Only search hosts in play! We can't be sure that all hosts have facts gathered
+        _hostvars_in_play: "{{ hostvars | dict2items | selectattr('key', 'in', ansible_play_hosts) | list }}"
+        _current_master_nodename: "{{ _hostvars_in_play | selectattr('value.ansible_default_ipv4.address', '==', rke2_server_ip)
+          | map(attribute='key') | list | first }}"
+      when: rke2_server_token is not defined
+
+    - name: "Template RKE2 config"
       become: true
       ansible.builtin.template:
         src: "config.yaml.j2"
@@ -97,7 +126,7 @@
       when:
         - "'molecule-idempotence-notest' not in ansible_skip_tags"
 
-    - name: "Setup | Download RKE2 install script"
+    - name: "Download RKE2 install script"
       become: true
       ansible.builtin.get_url:
         url: "{{ rke2_script_url }}"
@@ -106,7 +135,7 @@
         group: root
         mode: '0755'
 
-    - name: "Setup | Run RKE2 install script"
+    - name: "Run RKE2 install script"
       become: true
       ansible.builtin.command: |
         /tmp/rke2-install.sh
@@ -115,10 +144,8 @@
       environment:
         INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
         INSTALL_RKE2_TYPE: "{{ rke2_type }}"
-      when: 
-        - "'molecule-idempotence-notest' not in ansible_skip_tags"
 
-    - name: "Setup | Start other RKE2 servers"
+    - name: "Start other RKE2 servers"
       become: true
       ansible.builtin.service:
         name: rke2-server
