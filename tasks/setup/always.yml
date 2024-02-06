@@ -60,6 +60,8 @@
       environment:
         INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
         INSTALL_RKE2_TYPE: "{{ rke2_type }}"
+      when: 
+        - "'molecule-idempotence-notest' not in ansible_skip_tags"
 
     - name: "Setup | Start first RKE2 server"
       become: true
