@@ -1,11 +1,15 @@
 ---
-- name: Ensure __role_name is defined
-  ansible.builtin.assert:
-    that:
-      - __role_name is defined
-      - __role_name is string
-      - __role_name | length > 0
-      # Make sure I don't forget to replace the role name
-      # This assert failing also ensures this role is not uploaded to Ansible Galaxy
-      - "__role_name != ['temp', 'late'] | join('')"
+rke2_role_name: "rke2"
+rke2_script_url: "https://get.rke2.io"
+rke2_channel: "v1.24" # Latest is 1.26, this is latest supported by Rancher
+rke2_tls_san:
+  - "{{ ansible_domain }}"
+
+rke2_type: "server"
+rke2_server_ansible_user: "{{ ansible_user_id }}"
+
+# Automatically cluster the server nodes in the current play
+rke2_auto_cluster: true
+
+rke2_dependencies: "{{ _rke2_dependencies }}"
 ...

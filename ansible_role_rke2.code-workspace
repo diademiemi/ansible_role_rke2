@@ -27,7 +27,6 @@
 			"redhat.ansible",
 			"redhat.vscode-yaml",
 			"hashicorp.terraform",
-			"GitHub.copilot-nightly",
 			"GitLab.gitlab-workflow",
 			"yzhang.markdown-all-in-one"
 		]

@@ -15,45 +15,60 @@
     group: root
     mode: '0755'
 
-- name: "Setup | Template RKE2 config"
-  become: true
-  ansible.builtin.template:
-    src: "config.yaml.j2"
-    dest: "/etc/rancher/rke2/config.yaml"
-    owner: root
-    group: root
-    mode: '0644'
+- name: Setup | Get all hosts in current play
+  ansible.builtin.set_fact:
+    _rke2_current_hosts: "{{ ansible_play_hosts }}"
+
+- name: Setup | Set rke2_server_ip to first host if not defined
+  ansible.builtin.set_fact:
+    rke2_server_ip: "{{ hostvars[_rke2_current_hosts.0].ansible_default_ipv4.address }}"
   when:
-    - "'molecule-idempotence-notest' not in ansible_skip_tags"
+    - _rke2_current_hosts | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
+    - _rke2_current_hosts.0 != inventory_hostname
+    - rke2_auto_cluster  # Only run when we should automatically cluster the servers
 
-- name: "Setup | Download RKE2 install script"
-  become: true
-  ansible.builtin.get_url:
-    url: "{{ rke2_script_url }}"
-    dest: "/tmp/rke2-install.sh"
-    owner: root
-    group: root
-    mode: '0755'
-
-- name: "Setup | Run RKE2 install script"
-  become: true
-  ansible.builtin.command: |
-    /tmp/rke2-install.sh
-  args:
-    creates: "/usr/local/bin/rke2"
-  environment:
-    INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
-    INSTALL_RKE2_TYPE: "{{ rke2_type }}"
-
-- name: "Setup | Start first RKE2 server"
-  become: true
-  ansible.builtin.service:
-    name: rke2-server
-    state: started
-    enabled: true
+- name: First server
   when:
     - rke2_server_ip is undefined
-    - "'molecule-notest' not in ansible_skip_tags"
+  block:
+    - name: "Setup | Template RKE2 config"
+      become: true
+      ansible.builtin.template:
+        src: "config.yaml.j2"
+        dest: "/etc/rancher/rke2/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+      when:
+        - "'molecule-idempotence-notest' not in ansible_skip_tags"
+
+    - name: "Setup | Download RKE2 install script"
+      become: true
+      ansible.builtin.get_url:
+        url: "{{ rke2_script_url }}"
+        dest: "/tmp/rke2-install.sh"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: "Setup | Run RKE2 install script"
+      become: true
+      ansible.builtin.command: |
+        /tmp/rke2-install.sh
+      args:
+        creates: "/usr/local/bin/rke2"
+      environment:
+        INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
+        INSTALL_RKE2_TYPE: "{{ rke2_type }}"
+
+    - name: "Setup | Start first RKE2 server"
+      become: true
+      ansible.builtin.service:
+        name: rke2-server
+        state: started
+        enabled: true
+      when:
+        - "'molecule-notest' not in ansible_skip_tags"
 
 - name: "Setup | Wait for RKE2 server to be ready on port 9345"
   become: true
@@ -65,19 +80,52 @@
     - rke2_server_ip is undefined
     - "'molecule-notest' not in ansible_skip_tags"
 
-- name: "Setup | Start other RKE2 servers"
-  become: true
-  ansible.builtin.service:
-    name: rke2-server
-    state: started
-    enabled: true
+- name: Other servers
   when:
     - rke2_server_ip is defined
-    - "'molecule-notest' not in ansible_skip_tags"
-  retries: 5
-  delay: 10
-  register: rke2_start
-  until: rke2_start is succeeded
+  block:
+    - name: "Setup | Template RKE2 config"
+      become: true
+      ansible.builtin.template:
+        src: "config.yaml.j2"
+        dest: "/etc/rancher/rke2/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+      when:
+        - "'molecule-idempotence-notest' not in ansible_skip_tags"
+
+    - name: "Setup | Download RKE2 install script"
+      become: true
+      ansible.builtin.get_url:
+        url: "{{ rke2_script_url }}"
+        dest: "/tmp/rke2-install.sh"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: "Setup | Run RKE2 install script"
+      become: true
+      ansible.builtin.command: |
+        /tmp/rke2-install.sh
+      args:
+        creates: "/usr/local/bin/rke2"
+      environment:
+        INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
+        INSTALL_RKE2_TYPE: "{{ rke2_type }}"
+
+    - name: "Setup | Start other RKE2 servers"
+      become: true
+      ansible.builtin.service:
+        name: rke2-server
+        state: started
+        enabled: true
+      when:
+        - "'molecule-notest' not in ansible_skip_tags"
+      retries: 5
+      delay: 10
+      register: rke2_start
+      until: rke2_start is succeeded
 
 - name: "Server | Ensure .kube directory exists"
   become: true
@@ -104,13 +152,13 @@
     mode: "u=rw,g=,o="
   when: rke2_yaml.stat.exists
 
-- name: "Server | Create rke2 symlink"
-  become: true
-  ansible.builtin.file:
-    src: /opt/rke2/bin/rke2
-    dest: /usr/local/bin/rke2
-    state: link
-    force: true
+# - name: "Server | Create rke2 symlink"
+#   become: true
+#   ansible.builtin.file:
+#     src: /opt/rke2/bin/rke2
+#     dest: /usr/local/bin/rke2
+#     state: link
+#     force: true
 
 - name: "Server | Create kubectl symlink"
   become: true

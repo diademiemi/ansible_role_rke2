@@ -34,7 +34,8 @@ Variable | Default | Description
 `rke2_tls_san` | `["{{ ansible_domain }}"]` | List of additional domains to add to the RKE2 server certificate
 `rke2_type` | `server` | RKE2 type. Options: `[server, agent]`
 `rke2_server_token` | ` ` | RKE2 server token to set. Will be generated at runtime if unset.
-`rke2_server_ip` | ` ` | If this variable is set, nodes will register to this existing server. Must not be set on the initial host. To provision with Rancher, use the [rke2_agent](../rke2_agent/) role.
+`rke2_auto_cluster` | `true` | Automatically put all nodes in the current play in a single cluster. Use the first hosts as initial server.
+`rke2_server_ip` | ` ` | If this variable is set, nodes will register to this existing server. Must not be set on the initial host.
 `rke2_server_ansible_user` | `{{ ansible_user_id }}` | User to copy the kubeconfig to ~/.kube/config
 <!--
 `variable` | `default` | Variable example

@@ -3,5 +3,6 @@ ansible-lint
 ansible
 ansible-compat
 antsibull-changelog
+antsibull-docs
 molecule
 molecule-plugins[podman]
