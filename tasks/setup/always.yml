@@ -12,7 +12,7 @@
   ansible.builtin.set_fact:
     rke2_server_ip: "{{ hostvars[ansible_play_hosts | sort | first].ansible_default_ipv4.address }}"
   when:
-    - ansible_play_hosts | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
+    - ansible_play_hosts | sort | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
     - ansible_play_hosts | sort | first != inventory_hostname
     - rke2_auto_cluster  # Only run when we should automatically cluster the servers
 
