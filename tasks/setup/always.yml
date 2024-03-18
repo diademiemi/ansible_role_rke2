@@ -9,12 +9,26 @@
     mode: '0755'
 
 - name: Set rke2_server_ip to first host if not defined
+  # Select a "master" server node which will be uwsed to bootstrap the cluster
   ansible.builtin.set_fact:
-    rke2_server_ip: "{{ hostvars[ansible_play_hosts | sort | first].ansible_default_ipv4.address }}"
+    # Fuckshittery that only selects a host where type is either "server" or undefined (defaults to "server")
+    rke2_server_ip: "{{ _rke2_server_ip }}"
+  vars:
+    _hostvars_in_play: "{{ hostvars | dict2items | selectattr('key', 'in', ansible_play_hosts) | list }}"
+    _rke2_server_ip: "{{ _hostvars_in_play
+      | selectattr('value.rke2_type', 'defined')
+      | selectattr('value.rke2_type', 'equalto', 'server')
+      | combine(_hostvars_in_play
+      | rejectattr('value.rke2_type', 'defined'))
+      | dict2items | list | sort(attribute='key') | json_query('[].value.ansible_default_ipv4.address') | first }}"
   when:
     - ansible_play_hosts | sort | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
-    - ansible_play_hosts | sort | first != inventory_hostname
+    - ansible_default_ipv4.address != _rke2_server_ip
     - rke2_auto_cluster  # Only run when we should automatically cluster the servers
+
+- name: Return cluster information
+  ansible.builtin.debug:
+    msg: "{% if rke2_server_ip is defined %}Using {{ rke2_server_ip }} as bootstrap server{% else %}Cluster will be boostrapped from this node {% endif %}"
 
 - name: First server
   when:
@@ -70,13 +84,10 @@
 
     - name: "Run RKE2 install script"
       become: true
-      ansible.builtin.command: |
-        /tmp/rke2-install.sh
+      ansible.builtin.shell: |
+        INSTALL_RKE2_CHANNEL="{{ rke2_channel }}" /tmp/rke2-install.sh
       args:
         creates: "/usr/local/bin/rke2"
-      environment:
-        INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
-        INSTALL_RKE2_TYPE: "{{ rke2_type }}"
       when:
         - "'molecule-idempotence-notest' not in ansible_skip_tags"
 
@@ -136,18 +147,16 @@
 
     - name: "Run RKE2 install script"
       become: true
-      ansible.builtin.command: |
-        /tmp/rke2-install.sh
+      ansible.builtin.shell: |
+        INSTALL_RKE2_CHANNEL="{{ rke2_channel }}" INSTALL_RKE2_TYPE="{{ rke2_type }}" /tmp/rke2-install.sh
       args:
         creates: "/usr/local/bin/rke2"
-      environment:
-        INSTALL_RKE2_CHANNEL: "{{ rke2_channel }}"
-        INSTALL_RKE2_TYPE: "{{ rke2_type }}"
+      register: test
 
     - name: "Start other RKE2 servers"
       become: true
       ansible.builtin.service:
-        name: rke2-server
+        name: "rke2-{{ rke2_type }}"
         state: started
         enabled: true
       when:

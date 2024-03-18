@@ -8,3 +8,7 @@ tls-san:
   - {{ san }}
 {% endfor %}
 {% endif %}
+{% if rke2_custom_config != '' %}
+# Custom configuration
+{{ rke2_custom_config }}
+{% endif %}
