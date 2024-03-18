@@ -11,4 +11,6 @@ rke2_server_ansible_user: "{{ ansible_user_id }}"
 rke2_dependencies: "{{ _rke2_dependencies }}"
 
 rke2_auto_cluster: true
+
+rke2_custom_config: ""
 ...
