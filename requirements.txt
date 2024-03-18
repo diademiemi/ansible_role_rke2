@@ -6,3 +6,4 @@ antsibull-changelog
 antsibull-docs
 molecule
 molecule-plugins[docker]
+jmespath
