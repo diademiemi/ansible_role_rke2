@@ -28,7 +28,7 @@
 
 - name: Return cluster information
   ansible.builtin.debug:
-    msg: "{% if rke2_server_ip is defined %}Using {{ rke2_server_ip }} as bootstrap server{% else %}Cluster will be boostrapped from this node {% endif %}"
+    msg: "{% if rke2_server_ip is defined %}Using {{ rke2_server_ip }} as bootstrap server{% else %}Cluster will be boostrapped from this node{% endif %}"
 
 - name: First server
   when:
