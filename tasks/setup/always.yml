@@ -13,14 +13,39 @@
   ansible.builtin.set_fact:
     # Fuckshittery that only selects a host where type is either "server" or undefined (defaults to "server")
     rke2_server_ip: "{{ _rke2_server_ip }}"
+    rke2_server_master_inventory_name: "{{ _rke2_server_master_inventory_name }}"
   vars:
-    _hostvars_in_play: "{{ hostvars | dict2items | selectattr('key', 'in', ansible_play_hosts) | list }}"
-    _rke2_server_ip: "{{ _hostvars_in_play
-      | selectattr('value.rke2_type', 'defined')
-      | selectattr('value.rke2_type', 'equalto', 'server')
-      | combine(_hostvars_in_play
-      | rejectattr('value.rke2_type', 'defined'))
-      | dict2items | list | sort(attribute='key') | json_query('[].value.ansible_default_ipv4.address') | first }}"
+
+    # This is a bunch of fuckery that essentially generates a list of every participating host like
+    # _rke_types_dict:
+    #   - name: inventory_hostname
+    #     ip: x.x.x.x
+    #     type: server
+    # It is then sorted by name and the first host is selected as master node
+    # I would use hostvars directly with some smart logic, in fact, check previous commits for that
+    # But that would break if not EVERY variable in hostvars was accessible. This seems to be an ansible """bug""" or oddity
+    # e.g. debug: msg="{{ hostvars }}" would crash too, not just the logic! interesting!
+    # This is a.... solution. It's not a pretty one. As in, it works! but it's not very maintainable, that I agree. I might revisit this problem one day.
+    # But my ansible brain rot came up with this and hey, it works pretty consistently it seems.
+    _rke_types_dict: "
+      {%- set ns = namespace(hostlist = []) -%}
+      {% for host in ansible_play_hosts %}
+        {% if hostvars[host].ansible_default_ipv4.address is defined %}
+          {%- set ns.hostlist = ns.hostlist +
+          [{'name': host, 'ip': hostvars[host].ansible_default_ipv4.address, 'type': hostvars[host].rke_type | default('server')}] -%}
+        {% endif %}
+      {% endfor %}
+      {{ ns.hostlist }}"
+
+
+    _rke2_server: "{{ (_rke_types_dict | trim | from_yaml
+      | selectattr('type', 'equalto', 'server')
+      + (_rke_types_dict | trim | from_yaml
+      | rejectattr('type', 'defined'))
+      | sort(attribute='name')) | first }}"
+    _rke2_server_ip: "{{ _rke2_server.ip }}"
+    _rke2_server_master_inventory_name: "{{ _rke2_server.name }}"
+
   when:
     - ansible_play_hosts | sort | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
     - ansible_default_ipv4.address != _rke2_server_ip
@@ -28,7 +53,7 @@
 
 - name: Return cluster information
   ansible.builtin.debug:
-    msg: "{% if rke2_server_ip is defined %}Using {{ rke2_server_ip }} as bootstrap server{% else %}Cluster will be boostrapped from this node {% endif %}"
+    msg: "{% if rke2_server_ip is defined %}Using {{ rke2_server_ip }} as bootstrap server{% else %}Cluster will be boostrapped from this node{% endif %}"
 
 - name: First server
   when:
@@ -116,13 +141,7 @@
   block:
     - name: "Attempt to get token from master if none was given"
       ansible.builtin.set_fact:
-        rke2_server_token: "{{ hostvars[_current_master_nodename].rke2_server_token }}"
-      vars:
-        # Get which node has the master IP
-        # Only search hosts in play! We can't be sure that all hosts have facts gathered
-        _hostvars_in_play: "{{ hostvars | dict2items | selectattr('key', 'in', ansible_play_hosts) | list }}"
-        _current_master_nodename: "{{ _hostvars_in_play | selectattr('value.ansible_default_ipv4.address', '==', rke2_server_ip)
-          | map(attribute='key') | list | first }}"
+        rke2_server_token: "{{ hostvars[_rke2_server_master_inventory_name].rke2_server_token }}"
       when: rke2_server_token is not defined
 
     - name: "Template RKE2 config"

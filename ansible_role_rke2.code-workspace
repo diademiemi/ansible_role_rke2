@@ -6,6 +6,8 @@
 	],
 	"settings": {
 		"ansible.python.interpreterPath": "/bin/python3",
+		"markdown.extension.toc.levels": "1..5",
+		"markdown.preview.doubleClickToSwitchToEditor": false,	  
 		"files.associations": {
 			"**/tasks/**/*.yml": "ansible",
 			"**/vars/**/*.yml": "ansible",
