@@ -37,7 +37,6 @@
       {% endfor %}
       {{ ns.hostlist }}"
 
-
     _rke2_server: "{{ (_rke_types_dict | trim | from_yaml
       | selectattr('type', 'equalto', 'server')
       + (_rke_types_dict | trim | from_yaml
