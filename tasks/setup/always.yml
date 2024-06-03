@@ -8,6 +8,10 @@
     group: root
     mode: '0755'
 
+- name: Gather network facts
+  ansible.builtin.setup:
+    gather_subset: network
+
 - name: Set rke2_server_ip to first host if not defined
   # Select a "master" server node which will be uwsed to bootstrap the cluster
   ansible.builtin.set_fact:
