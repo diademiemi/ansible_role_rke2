@@ -140,7 +140,7 @@
   block:
     - name: "Attempt to get token from master if none was given"
       ansible.builtin.set_fact:
-        rke2_server_token: "{{ hostvars[_rke2_server_master_inventory_name].rke2_server_token }}"
+        rke2_server_token: "{{ hostvars[rke2_server_master_inventory_name].rke2_server_token }}"
       when: rke2_server_token is not defined
 
     - name: "Template RKE2 config"
