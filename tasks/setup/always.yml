@@ -51,7 +51,7 @@
 
   when:
     - ansible_play_hosts | sort | map('extract', hostvars, 'rke2_server_ip') | select('defined') | list | length == 0
-    - ansible_default_ipv4.address != _rke2_server_ip
+    - hostvars[inventory_hostname].ansible_default_ipv4.address != _rke2_server_ip
     - rke2_auto_cluster  # Only run when we should automatically cluster the servers
 
 - name: Return cluster information
